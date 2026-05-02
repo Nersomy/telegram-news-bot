@@ -36,6 +36,7 @@ def send_news():
 schedule.every().day.at("08:00").do(send_news)
 schedule.every().day.at("12:00").do(send_news)
 schedule.every().day.at("18:00").do(send_news)
+schedule.every().day.at("21:00").do(send_news)
 
 print("Бот запущен и ждёт времени...")
 while True:
