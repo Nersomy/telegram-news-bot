@@ -14,6 +14,7 @@ TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 RSS_URL = "https://news.google.com/rss/search?q=Poland&hl=en&gl=US&ceid=US:en"
+RSS_URL2 = "https://notesfrompoland.com/feed"
 
 groq_client = Groq(api_key=GROQ_API_KEY)
 
@@ -33,10 +34,12 @@ def summarize(title, link):
         return ""
 
 def send_news():
-    feed = feedparser.parse(RSS_URL)
+    feed1 = feedparser.parse(RSS_URL)
+    feed2 = feedparser.parse(RSS_URL2)
+    entries = feed1.entries[:5] + feed2.entries[:5]
     translator = GoogleTranslator(source='auto', target='ru')
     text = "🇵🇱 Новости Польши:\n\n"
-    for entry in feed.entries[:5]:
+    for entry in entries:
         title_ru = translator.translate(entry.title)
         summary = summarize(entry.title, entry.link)
         short_url = shorten_url(entry.link)
