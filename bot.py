@@ -94,8 +94,8 @@ def check_updates():
 # Запуск обработчика сообщений в отдельном потоке
 threading.Thread(target=check_updates, daemon=True).start()
 
-schedule.every().day.at("08:00").do(send_news)
-schedule.every().day.at("12:00").do(send_news)
+schedule.every().day.at("06:00").do(send_news)
+schedule.every().day.at("10:00").do(send_news)
 schedule.every().day.at("18:00").do(send_news)
 
 print("Бот запущен и ждёт времени...")
