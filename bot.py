@@ -1,5 +1,5 @@
 import os
-import json
+import redis
 import requests
 import feedparser
 import urllib.parse
@@ -14,34 +14,25 @@ load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+REDIS_URL = os.getenv("REDIS_URL")
 RSS_URL = "https://news.google.com/rss/search?q=Poland&hl=en&gl=US&ceid=US:en"
 RSS_URL2 = "https://notesfrompoland.com/feed"
-SUBSCRIBERS_FILE = "subscribers.json"
 
 groq_client = Groq(api_key=GROQ_API_KEY)
-
-def load_subscribers():
-    if os.path.exists(SUBSCRIBERS_FILE):
-        with open(SUBSCRIBERS_FILE, "r") as f:
-            return json.load(f)
-    return []
-
-def save_subscribers(subs):
-    with open(SUBSCRIBERS_FILE, "w") as f:
-        json.dump(subs, f)
+r = redis.from_url(REDIS_URL)
 
 def add_subscriber(chat_id):
-    subs = load_subscribers()
-    if chat_id not in subs:
-        subs.append(chat_id)
-        save_subscribers(subs)
+    r.sadd("subscribers", chat_id)
+
+def load_subscribers():
+    return [int(x) for x in r.smembers("subscribers")]
 
 def shorten_url(url):
     api_url = f"http://tinyurl.com/api-create.php?url={urllib.parse.quote(url)}"
     response = requests.get(api_url)
     return response.text
 
-def summarize(title, link):
+def summarize(title):
     try:
         chat = groq_client.chat.completions.create(
             model="llama3-8b-8192",
@@ -63,7 +54,7 @@ def send_news():
     text = "🇵🇱 Новости Польши:\n\n"
     for entry in entries:
         title_ru = translator.translate(entry.title)
-        summary = summarize(entry.title, entry.link)
+        summary = summarize(entry.title)
         short_url = shorten_url(entry.link)
         text += f"• {title_ru}\n{summary}\n{short_url}\n\n"
     for chat_id in load_subscribers():
@@ -91,12 +82,11 @@ def check_updates():
             pass
         time.sleep(1)
 
-# Запуск обработчика сообщений в отдельном потоке
 threading.Thread(target=check_updates, daemon=True).start()
 
 schedule.every().day.at("06:00").do(send_news)
 schedule.every().day.at("10:00").do(send_news)
-schedule.every().day.at("18:00").do(send_news)
+schedule.every().day.at("16:00").do(send_news)
 
 print("Бот запущен и ждёт времени...")
 while True:
