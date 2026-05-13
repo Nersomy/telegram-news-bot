@@ -52,7 +52,15 @@ def send_news():
     entries = feed1.entries[:5] + feed2.entries[:5]
     translator = GoogleTranslator(source='auto', target='ru')
     text = "🇵🇱 Новости Польши:\n\n"
+    new_entries = []
     for entry in entries:
+        if not r.sismember("sent_news", entry.link):
+            new_entries.append(entry)
+            r.sadd("sent_news", entry.link)
+    if not new_entries:
+        print("Нет новых новостей")
+        return
+    for entry in new_entries:
         title_ru = translator.translate(entry.title)
         summary = summarize(entry.title)
         short_url = shorten_url(entry.link)
